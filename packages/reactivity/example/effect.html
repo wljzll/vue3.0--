@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div id="app"></div><input type="tel">
+    <script src="../dist/reactivity.global.js"></script>
+
+    <script>
+      let { effect, reactive, ref, toRaw, markRaw } = VueReactivity
+      let obj = {
+        name: 'zf',
+        age: 11
+      }
+      const proxy = reactive(obj)
+
+      // let originObj = toRaw(proxy);
+      // console.log(proxy, obj);
+      // console.log('originObj', originObj);
+      markRaw(proxy)
+      //   let state = reactive({
+      //     name: 'zf',
+      //     age: {
+      //       n: 12
+      //     },
+      //     arr: [1, 2]
+      //   })
+
+      //   effect(() => {
+      //     console.log('执行了')
+      //     app.innerHTML = '珠峰今年' + state.arr[1]
+      //   })
+
+      //   state.arr.pop()
+      //   console.log(state);
+      // console.log(ref({
+      //     age: 12
+      // }));
+      /**
+       *1) state.arr.pop() =>  触发set() => 触发trigger() => 重新执行effect => 取值触发get() => 收集effect(已收集，不再重复收集)
+       *
+       */
+
+      // 执行了 - 默认执行effect
+      // Object Arguments(5) [Array(2), "delete", "1", undefined, 2, callee: (...), Symbol(Symbol.iterator): ƒ] - 触发trigger
+      // 执行了 - 重新执行effect
+      // Array Arguments(5) [Array(1), "set", "length", 1, 2, callee: (...), Symbol(Symbol.iterator): ƒ] - 这里在取值的时候会触发length的修改?
+      // 执行了 - 重新执行effect
+    </script>
+  </body>
+</html>
