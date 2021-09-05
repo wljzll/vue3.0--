@@ -49,7 +49,7 @@ export type DebuggerEventExtraInfo = {
 }
 
 const effectStack: ReactiveEffect[] = []
-let activeEffect: ReactiveEffect | undefined
+let activeEffect: ReactiveEffect | undefined // 保存当前活跃的effect
 
 export const ITERATE_KEY = Symbol(__DEV__ ? 'iterate' : '')
 export const MAP_KEY_ITERATE_KEY = Symbol(__DEV__ ? 'Map key iterate' : '')
@@ -76,7 +76,7 @@ export class ReactiveEffect<T = any> {
     recordEffectScope(this, scope)
   }
 
-  run() {
+  run() { // 作用：执行fn()
     // 第一次不会执行
     if (!this.active) { // 如果active为false 默认为true
       return this.fn() // 执行fn
@@ -156,9 +156,9 @@ export function effect<T = any>(
   fn: () => T, // 用户传入的函数
   options?: ReactiveEffectOptions // 用户传入的额外选项
 ): ReactiveEffectRunner {
-  // fn的effect属性有值
+  // 如果用户传入的函数是effect的返回值 也就是runner函数
   if ((fn as ReactiveEffectRunner).effect) {
-    fn = (fn as ReactiveEffectRunner).effect.fn
+    fn = (fn as ReactiveEffectRunner).effect.fn // 取runner上的fn函数也就是原始函数
   }
   
   // 实例化ReactiveEffect
@@ -170,13 +170,13 @@ export function effect<T = any>(
   }
   
   // options不存在或者options存在但无lazy属性
-  if (!options || !options.lazy) {
+  if (!options || !options.lazy) { // 默认执行一次
     _effect.run() // 执行_effect实例的run()方法 也就是执行了一次fn()
   }
 
-  const runner = _effect.run.bind(_effect) as ReactiveEffectRunner
-  runner.effect = _effect
-  return runner
+  const runner = _effect.run.bind(_effect) as ReactiveEffectRunner // runner是真正的effect的返回结果
+  runner.effect = _effect // 将effect这个类保存到runner的effect属性上
+  return runner // 返回runner方法
 }
 
 export function stop(runner: ReactiveEffectRunner) {

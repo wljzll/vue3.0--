@@ -35,8 +35,8 @@ export const newTracked = (dep: Dep): boolean => (dep.n & trackOpBit) > 0
  */
 export const initDepMarkers = ({ deps }: ReactiveEffect) => {
   if (deps.length) {
-    for (let i = 0; i < deps.length; i++) {
-      deps[i].w |= trackOpBit // set was tracked
+    for (let i = 0; i < deps.length; i++) { // 循环effect实例中的deps 拿到每一个deps中的w参数
+      deps[i].w |= trackOpBit // set was tracked i |= j => i = i | j
     }
   }
 }
