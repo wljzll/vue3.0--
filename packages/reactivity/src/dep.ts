@@ -29,6 +29,10 @@ export const wasTracked = (dep: Dep): boolean => (dep.w & trackOpBit) > 0
 
 export const newTracked = (dep: Dep): boolean => (dep.n & trackOpBit) > 0
 
+/**
+ * 
+ * @param param0 传入的是effect实例 从effect实例上解构出deps属性 
+ */
 export const initDepMarkers = ({ deps }: ReactiveEffect) => {
   if (deps.length) {
     for (let i = 0; i < deps.length; i++) {

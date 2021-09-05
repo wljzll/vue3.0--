@@ -80,8 +80,8 @@ export function effectScope(detached?: boolean) {
 }
 
 export function recordEffectScope(
-  effect: ReactiveEffect,
-  scope?: EffectScope | null
+  effect: ReactiveEffect, // effect实例
+  scope?: EffectScope | null // ?
 ) {
   scope = scope || activeEffectScope
   if (scope && scope.active) {

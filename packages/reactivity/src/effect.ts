@@ -14,20 +14,24 @@ import {
 // Conceptually, it's easier to think of a dependency as a Dep class
 // which maintains a Set of subscribers, but we simply store them as
 // raw Sets to reduce memory overhead.
+
 type KeyToDepMap = Map<any, Dep>
 const targetMap = new WeakMap<any, KeyToDepMap>()
 
 // The number of effects currently being tracked recursively.
-let effectTrackDepth = 0
+let effectTrackDepth = 0 // ?
 
-export let trackOpBit = 1
+export let trackOpBit = 1 // ?
 
 /**
  * The bitwise track markers support at most 30 levels op recursion.
+ * 按位跟踪标记最多支持 30 级操作递归。
  * This value is chosen to enable modern JS engines to use a SMI on all platforms.
+ * 选择此值是为了使现代 JS 引擎能够在所有平台上使用 SMI。
  * When recursion depth is greater, fall back to using a full cleanup.
+ * 当递归深度更大时，回退到使用完全清理
  */
-const maxMarkerBits = 30
+const maxMarkerBits = 30 // 最多30级操作递归
 
 export type EffectScheduler = (...args: any[]) => any
 
@@ -50,46 +54,50 @@ let activeEffect: ReactiveEffect | undefined
 export const ITERATE_KEY = Symbol(__DEV__ ? 'iterate' : '')
 export const MAP_KEY_ITERATE_KEY = Symbol(__DEV__ ? 'Map key iterate' : '')
 
+// 生成effect实例的类
 export class ReactiveEffect<T = any> {
-  active = true
-  deps: Dep[] = []
+  active = true // ?
+  deps: Dep[] = [] // 存放收集当前effect的数据
 
   // can be attached after creation
-  computed?: boolean
-  allowRecurse?: boolean
-  onStop?: () => void
+  computed?: boolean // ?
+  allowRecurse?: boolean // ?
+  onStop?: () => void // ?
   // dev only
   onTrack?: (event: DebuggerEvent) => void
   // dev only
   onTrigger?: (event: DebuggerEvent) => void
 
   constructor(
-    public fn: () => T,
-    public scheduler: EffectScheduler | null = null,
-    scope?: EffectScope | null
+    public fn: () => T, // 用户传入effect中的函数
+    public scheduler: EffectScheduler | null = null, // 默认声明一个scheduler
+    scope?: EffectScope | null // ?
   ) {
     recordEffectScope(this, scope)
   }
 
   run() {
-    if (!this.active) {
-      return this.fn()
+    // 第一次不会执行
+    if (!this.active) { // 如果active为false 默认为true
+      return this.fn() // 执行fn
     }
-    if (!effectStack.includes(this)) {
+    
+    if (!effectStack.includes(this)) { // effectStack栈中不包含这个effect实例
       try {
-        effectStack.push((activeEffect = this))
-        enableTracking()
-
+        effectStack.push((activeEffect = this)) // 将当前effect赋值给activeEffect 并push到effectStack中
+        enableTracking() // ?
+        
+        // << 移位运算符 为什么要移位运算?
         trackOpBit = 1 << ++effectTrackDepth
 
-        if (effectTrackDepth <= maxMarkerBits) {
-          initDepMarkers(this)
-        } else {
+        if (effectTrackDepth <= maxMarkerBits) { // 如果没有超过30层
+          initDepMarkers(this) 
+        } else { // 超过30层
           cleanupEffect(this)
         }
-        return this.fn()
-      } finally {
-        if (effectTrackDepth <= maxMarkerBits) {
+        return this.fn() // 返回fn()函数的返回值
+      } finally { // try内的代码执行完无论有无报错都会执行
+        if (effectTrackDepth <= maxMarkerBits) { // effect的track深度未超过30层
           finalizeDepMarkers(this)
         }
 
@@ -129,6 +137,7 @@ export interface DebuggerOptions {
   onTrigger?: (event: DebuggerEvent) => void
 }
 
+// 接口
 export interface ReactiveEffectOptions extends DebuggerOptions {
   lazy?: boolean
   scheduler?: EffectScheduler
@@ -137,27 +146,34 @@ export interface ReactiveEffectOptions extends DebuggerOptions {
   onStop?: () => void
 }
 
+// 接口
 export interface ReactiveEffectRunner<T = any> {
   (): T
   effect: ReactiveEffect
 }
 
 export function effect<T = any>(
-  fn: () => T,
-  options?: ReactiveEffectOptions
+  fn: () => T, // 用户传入的函数
+  options?: ReactiveEffectOptions // 用户传入的额外选项
 ): ReactiveEffectRunner {
+  // fn的effect属性有值
   if ((fn as ReactiveEffectRunner).effect) {
     fn = (fn as ReactiveEffectRunner).effect.fn
   }
-
+  
+  // 实例化ReactiveEffect
   const _effect = new ReactiveEffect(fn)
-  if (options) {
-    extend(_effect, options)
+
+  if (options) { // 如果effect中存在options
+    extend(_effect, options) // 将options用Object.assign合并到_effect这个对象上
     if (options.scope) recordEffectScope(_effect, options.scope)
   }
+  
+  // options不存在或者options存在但无lazy属性
   if (!options || !options.lazy) {
-    _effect.run()
+    _effect.run() // 执行_effect实例的run()方法 也就是执行了一次fn()
   }
+
   const runner = _effect.run.bind(_effect) as ReactiveEffectRunner
   runner.effect = _effect
   return runner
@@ -167,8 +183,8 @@ export function stop(runner: ReactiveEffectRunner) {
   runner.effect.stop()
 }
 
-let shouldTrack = true
-const trackStack: boolean[] = []
+let shouldTrack = true // 当前effect是否允许被收集
+const trackStack: boolean[] = [] // 存放effect是否允许被收集标识
 
 export function pauseTracking() {
   trackStack.push(shouldTrack)
@@ -176,8 +192,8 @@ export function pauseTracking() {
 }
 
 export function enableTracking() {
-  trackStack.push(shouldTrack)
-  shouldTrack = true
+  trackStack.push(shouldTrack) // 将标识push到trackStack中
+  shouldTrack = true // 置为true
 }
 
 export function resetTracking() {
