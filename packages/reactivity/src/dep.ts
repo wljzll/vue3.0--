@@ -18,6 +18,11 @@ type TrackedMarkers = {
   n: number
 }
 
+/**
+ * @description 创建一个Set实例 并添加w和n属性
+ * @param effects 可能传入的effect
+ * @returns Set实例
+ */
 export const createDep = (effects?: ReactiveEffect[]): Dep => {
   const dep = new Set<ReactiveEffect>(effects) as Dep
   dep.w = 0

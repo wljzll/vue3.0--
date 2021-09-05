@@ -12,6 +12,7 @@ import {
 
 // The main WeakMap that stores {target -> key -> dep} connections.
 // Conceptually, it's easier to think of a dependency as a Dep class
+// 理论上, 将依赖视为维护一组订阅者的 Dep 类更容易，但我们只是将它们存储为原始集合以减少内存开销。
 // which maintains a Set of subscribers, but we simply store them as
 // raw Sets to reduce memory overhead.
 
@@ -19,6 +20,7 @@ type KeyToDepMap = Map<any, Dep>
 const targetMap = new WeakMap<any, KeyToDepMap>()
 
 // The number of effects currently being tracked recursively.
+// 当前effect被递归的track层数
 let effectTrackDepth = 0 // ?
 
 export let trackOpBit = 1 // ?
@@ -201,48 +203,66 @@ export function resetTracking() {
   shouldTrack = last === undefined ? true : last
 }
 
+/**
+ * 
+ * @param target 被代理的对象
+ * @param type track的类型
+ * @param key 被代理的对象的key
+ * @returns 
+ */
 export function track(target: object, type: TrackOpTypes, key: unknown) {
-  if (!isTracking()) {
+  if (!isTracking()) { // 不能被收集依赖 直接return
     return
   }
-  let depsMap = targetMap.get(target)
-  if (!depsMap) {
+
+  let depsMap = targetMap.get(target) // targetMap中是否收集过target
+
+  if (!depsMap) { // 不存在
     targetMap.set(target, (depsMap = new Map()))
   }
-  let dep = depsMap.get(key)
-  if (!dep) {
+
+  let dep = depsMap.get(key) // depsMap中是否收集过对应的 key
+
+  if (!dep) { // 未被收集过 创建对应的Set
     depsMap.set(key, (dep = createDep()))
   }
 
   const eventInfo = __DEV__
     ? { effect: activeEffect, target, type, key }
-    : undefined
-
+    : undefined // 开发环境
   trackEffects(dep, eventInfo)
 }
 
 export function isTracking() {
+  // shouldTrack === true && activeEffect有值 说明可以收集effect
   return shouldTrack && activeEffect !== undefined
 }
 
+/**
+ * @description 将key对应的effect收集起来
+ * @param dep 存放key对应的effect的Set实例
+ * @param debuggerEventExtraInfo dev环境才有
+ */
 export function trackEffects(
   dep: Dep,
   debuggerEventExtraInfo?: DebuggerEventExtraInfo
 ) {
-  let shouldTrack = false
-  if (effectTrackDepth <= maxMarkerBits) {
+  
+  let shouldTrack = false // 是否应该收集
+
+  if (effectTrackDepth <= maxMarkerBits) { // 未超过30层
     if (!newTracked(dep)) {
       dep.n |= trackOpBit // set newly tracked
-      shouldTrack = !wasTracked(dep)
+      shouldTrack = !wasTracked(dep) // 是否应该track
     }
-  } else {
+  } else { // 超过30层
     // Full cleanup mode.
     shouldTrack = !dep.has(activeEffect!)
   }
 
-  if (shouldTrack) {
-    dep.add(activeEffect!)
-    activeEffect!.deps.push(dep)
+  if (shouldTrack) { // 应该收集
+    dep.add(activeEffect!) // 将effect添加到dep中
+    activeEffect!.deps.push(dep) // 将收集当前effect的dep添加到effect实例的deps属性中 实现dep和effect的双向记忆
     if (__DEV__ && activeEffect!.onTrack) {
       activeEffect!.onTrack(
         Object.assign(
